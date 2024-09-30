@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 using UnityEngine;
 
+[RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
     [Header("----- Components -----")]
@@ -16,11 +18,18 @@ public class PlayerController : MonoBehaviour
     private Vector3 playerVelocity;
     public Vector3 pushBack;
 
+    private Vector2 movementInput = Vector2.zero;
+
+
     void Start()
     {
-        
+        controller = gameObject.GetComponent<CharacterController>();
     }
 
+    public void OnMove(InputAction.CallbackContext context)
+    {
+        movementInput = context.ReadValue<Vector2>();
+    }
     // Update is called once per frame
     void Update()
     {
@@ -29,7 +38,7 @@ public class PlayerController : MonoBehaviour
 
     void movement()
     {
-        move = (transform.right * Input.GetAxis("Horizontal")) + (transform.forward * Input.GetAxis("Vertical"));
+        move = (transform.right * movementInput.x) + (transform.forward * movementInput.y);
         controller.Move(move * Time.deltaTime * playerSpeed);
 
         playerVelocity.y -= gravityValue * Time.deltaTime;
