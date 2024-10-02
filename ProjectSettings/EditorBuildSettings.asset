@@ -4,5 +4,11 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/JymeerScene.unity
+    guid: b0a68d61b081af8408e59619220da986
+  - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: c82f276b385bf08488678712d0e2d7b1
   m_configObjects: {}

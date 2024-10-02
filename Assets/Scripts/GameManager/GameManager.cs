@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -17,6 +18,7 @@ public class GameManager : MonoBehaviour
     [Header("----- UI Stuff -----")]
     public GameObject activeMenu;
     public GameObject pauseMenu;
+    public GameObject settingsMenu;
 
 
 
@@ -60,6 +62,9 @@ public class GameManager : MonoBehaviour
         activeMenu = null;
     }
 
-
+    public void OpenSettings()
+    {
+       
+    }
       
 }
