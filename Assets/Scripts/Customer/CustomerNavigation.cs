@@ -14,7 +14,6 @@ public class CustomerNavigation : MonoBehaviour
     [SerializeField] private string enterOrderedPositionsTag = "EnterPosition";
     [SerializeField] private string randomPositionTag = "RandomPosition";
     [SerializeField] private string randomPositionExitTag = "RandomPositionExit";
-    [SerializeField] private List<Transform> exitOrderedPositions;
 
     private NavMeshAgent customer;
     private int enterIndex = 0;
@@ -24,6 +23,9 @@ public class CustomerNavigation : MonoBehaviour
     private bool isExiting = false;
     private List<Transform> enterOrderedPositions = new List<Transform>();
     private List<Transform> randomPositions = new List<Transform>();
+    private List<Transform> exitOrderedPositions = new List<Transform>();
+
+    private static List<Transform> occupiedPositions = new List<Transform>(); // Track occupied positions
 
     private void Awake()
     {
@@ -37,42 +39,33 @@ public class CustomerNavigation : MonoBehaviour
         MoveToTarget();
     }
 
-
     private void FindEnterPositions()
     {
         GameObject[] enterPositionObjects = GameObject.FindGameObjectsWithTag(enterOrderedPositionsTag);
-
-        // Clear the list before adding new positions
-
         enterOrderedPositions.Clear();
-
-        // Iterate through the found objects in reverse order
-
         for (int i = enterPositionObjects.Length - 1; i >= 0; i--)
-
         {
-
-            enterOrderedPositions.Add(enterPositionObjects[i].transform); // Add to the enter positions list
-
+            enterOrderedPositions.Add(enterPositionObjects[i].transform);
         }
-
         Debug.Log("Enter positions found in reverse order: " + enterOrderedPositions.Count);
-
     }
+
     private void FindRandomPositions()
     {
         GameObject[] randomPositionObjects = GameObject.FindGameObjectsWithTag(randomPositionTag);
         GameObject[] exitPositionObjects = GameObject.FindGameObjectsWithTag(randomPositionExitTag);
+
+        randomPositions.Clear();
         foreach (GameObject obj in randomPositionObjects)
         {
             randomPositions.Add(obj.transform);
         }
-        Debug.Log("ranAdded");
         foreach (GameObject obj in exitPositionObjects)
         {
             randomPositions.Add(obj.transform);
         }
-        Debug.Log("extAdded");
+
+        Debug.Log("Random positions added: " + randomPositions.Count);
     }
 
     private void MoveToTarget()
@@ -120,62 +113,52 @@ public class CustomerNavigation : MonoBehaviour
 
     private void RandomTarget()
     {
-        if (randomPositions.Count > 0) // Ensure there are random positions available
+        if (randomPositions.Count > 0)
         {
             do
             {
-                currentRandomTargetIndex = Random.Range(0, randomPositions.Count); // Update the index to a new random target
+                // Choose a random target
+                currentRandomTargetIndex = Random.Range(0, randomPositions.Count);
                 Transform newTarget = randomPositions[currentRandomTargetIndex];
 
-                bool isTargetOccupied = false;
-                foreach (CustomerNavigation customer in CustomerManager.activeCustomers)
+                // Check if the target is already occupied
+                if (!occupiedPositions.Contains(newTarget))
                 {
-                    if (customer != this && customer.customer.destination == newTarget.position)
-                    {
-                        isTargetOccupied = true;
-                        break;
-                    }
-                }
-                if (!isTargetOccupied)
-                {
-                    break; //target available
+                    occupiedPositions.Add(newTarget); // Mark the position as occupied
+                    customer.destination = newTarget.position; // Set the destination to the new target
+                    break; // Exit the loop once a valid target is found
                 }
             }
-            while (true);
-            customer.destination = randomPositions[currentRandomTargetIndex].position; // Set the new destination
-            Invoke("CheckRandomTarget", 1f); // Wait for 1 second before checking if the agent has reached the target
+            while (true); // Retry until a valid target is found
+
+            // Wait for a random delay before checking if the agent reached the target
+            Invoke("CheckRandomTarget", 1f);
         }
     }
 
     private void CheckRandomTarget()
     {
-        // Check if the customer has reached the current target
         if (customer.remainingDistance < 0.5f)
         {
-            // Ensure currentRandomTargetIndex is valid before accessing the list
-            if (currentRandomTargetIndex >= 0 && currentRandomTargetIndex < randomPositions.Count)
+            // Once the customer reaches the target, free up the position and check the next target
+            Transform currentTarget = randomPositions[currentRandomTargetIndex];
+            occupiedPositions.Remove(currentTarget); // Free the position
+
+            // If this was the last target, start the exit sequence
+            if (currentRandomTargetIndex == randomPositions.Count - 1)
             {
-                Transform currentTarget = randomPositions[currentRandomTargetIndex]; // Get the current target based on the index
-                // Check if the current target is the last target in the list
-                if (currentRandomTargetIndex == randomPositions.Count - 1)
-                {
-                    Invoke("StartExitSequence", 0f); // Start the exit sequence immediately
-                }
-                else
-                {
-                    // Move to a new random target after a random delay
-                    Invoke("RandomTarget", Random.Range(2f, 5f)); // Wait for a random time between 2 and 5 seconds before moving to the next position
-                }
+                Invoke("StartExitSequence", 0f);
             }
             else
             {
-                Debug.LogError("Current random target index is out of range: " + currentRandomTargetIndex);
-                RandomTarget(); // Attempt to get a new random target
+                // Move to a new random target after a short delay
+                Invoke("RandomTarget", Random.Range(2f, 5f));
             }
         }
         else
         {
-            Invoke("CheckRandomTarget", 1f); // Wait for another second before checking again
+            // Continue checking until the customer reaches the target
+            Invoke("CheckRandomTarget", 1f);
         }
     }
 
@@ -185,6 +168,7 @@ public class CustomerNavigation : MonoBehaviour
         isExiting = true;
         MoveToTarget();
     }
+
     private void ExitTarget()
     {
         Debug.Log("ExitTarget");
